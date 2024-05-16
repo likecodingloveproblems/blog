@@ -56,6 +56,9 @@ class BaseCache:
 class ContentCache(BaseCache):
     '''This Cache will store content and content's like data'''
 
+    def __init__(self, conn: Redis):
+        super().__init__(conn)
+
     def get_key(self, content: dict | None = None, id_: int | None = None) -> str:
         if content and content.get('id'):
             id_ = content['id']
@@ -65,7 +68,7 @@ class ContentCache(BaseCache):
         return content
 
     def _get_data(self):
-        '''Get content data from database'''
+        """Get content data from database"""
         likes = Like.objects.filter(content_id=OuterRef('id')).values('content_id')
         likes_count = likes.annotate(count=Count('user_id', distinct=True)).values('count')
         likes_avg = likes.annotate(avg=Avg('value')).values('avg')
@@ -74,3 +77,17 @@ class ContentCache(BaseCache):
             likes_avg=Coalesce(likes_avg, 0.0),
         ).values('id', 'title', 'likes_count', 'likes_avg')
         return contents
+
+    def content_liked(self, like: Like):
+        """Update content like related data
+        increase like count by one
+        update like avg with new like value
+        """
+        past_count = self.conn.hget(self.get_key(id_=like.content_id), 'likes_count')
+        past_avg = self.conn.hget(self.get_key(id_=like.content_id), 'likes_avg')
+        new_avg = (past_avg * past_count + like.value) / (past_count + 1)
+
+        self.conn.hincrby(self.get_key(id_=like.content_id), "likes_count")
+        self.conn.hset(self.get_key(id_=like.content_id), 'likes_avg', new_avg)
+
+
