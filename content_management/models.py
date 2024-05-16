@@ -2,11 +2,11 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from django_lifecycle import LifecycleModel, hook, BEFORE_UPDATE, AFTER_UPDATE, AFTER_CREATE
+from django_lifecycle import LifecycleModel, hook, AFTER_UPDATE, AFTER_CREATE
+from django_lifecycle.conditions import WhenFieldHasChanged
 
 from blog.users.models import User
 from config.settings.base import redis
-from content_management.caches import ContentCache
 
 
 class Content(models.Model):
@@ -29,9 +29,19 @@ class Like(LifecycleModel):
 
     @staticmethod
     def get_cache():
+        """Get cache instance
+        TODO: maybe it can be cached in python!"""
+        from content_management.caches import ContentCache
         return ContentCache(redis)
 
     @hook(AFTER_CREATE)
     def update_cache(self):
         cache = self.get_cache()
         cache.content_liked(self)
+
+    @hook(AFTER_UPDATE,
+          condition=WhenFieldHasChanged('value', has_changed=True),
+          )
+    def update_content_like_cache(self):
+        cache = self.get_cache()
+        cache.like_value_updated(self)
