@@ -4,6 +4,7 @@
 from pathlib import Path
 
 import environ
+from redis import Redis
 
 BASE_DIR = Path(__file__).resolve(strict=True).parent.parent.parent
 # blog/
@@ -312,3 +313,17 @@ SPECTACULAR_SETTINGS = {
 }
 # Your stuff...
 # ------------------------------------------------------------------------------
+
+redis = Redis(
+    host=env.str('REDIS_HOST', 'localhost'),
+    port=env.int('REDIS_PORT', 6379),
+    db=env.int('REDIS_DB', 0),
+    decode_responses=env.bool('REDIS_DECORE_RESPONSE', True),
+)
+
+redis_test = Redis(
+    host=env.str('REDIS_HOST', 'localhost'),
+    port=env.int('REDIS_PORT', 6379),
+    db=env.int('REDIS_DB', 15),
+    decode_responses=env.bool('REDIS_DECORE_RESPONSE', True),
+)
