@@ -91,7 +91,7 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "blog.users",
-    # Your stuff: custom apps go here
+    "content_management",
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
