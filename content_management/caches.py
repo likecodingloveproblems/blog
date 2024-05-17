@@ -83,8 +83,8 @@ class ContentCache(BaseCache):
         increase like count by one
         update like avg with new like value
         """
-        past_count = int(self.conn.hget(self.get_key(id_=like.content_id), 'likes_count'))
-        past_avg = int(self.conn.hget(self.get_key(id_=like.content_id), 'likes_avg'))
+        past_count = int(self.conn.hget(self.get_key(id_=like.content_id), 'likes_count') or 0)
+        past_avg = int(self.conn.hget(self.get_key(id_=like.content_id), 'likes_avg') or 0)
         new_avg = (past_avg * past_count + like.value) / (past_count + 1)
 
         self.conn.hincrby(self.get_key(id_=like.content_id), "likes_count")
@@ -97,6 +97,6 @@ class ContentCache(BaseCache):
         """
         past_value = like.initial_value('value')
         new_value = like.value
-        count = int(self.conn.hget(self.get_key(id_=like.content_id), 'likes_count'))
+        count = int(self.conn.hget(self.get_key(id_=like.content_id), 'likes_count') or 0)
         avg_delta = (new_value - past_value) / count
         self.conn.hincrby(self.get_key(id_=like.content_id), 'likes_avg', avg_delta)
