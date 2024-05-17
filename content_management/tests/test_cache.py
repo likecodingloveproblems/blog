@@ -1,5 +1,5 @@
 from django.test import TestCase
-from config.settings.base import redis_test
+from config.settings.base import redis
 
 from blog.users.models import User
 from content_management.caches import ContentCache
@@ -8,7 +8,8 @@ from content_management.models import Content, Like
 
 class TestContentCache(TestCase):
     def setUp(self):
-        self.conn = redis_test
+        redis.select(15)
+        self.conn = redis
         self.conn.flushdb()
         self._create_users()
         self._create_contents()

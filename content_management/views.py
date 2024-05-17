@@ -1,4 +1,4 @@
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,22 +11,29 @@ from content_management.serializers import ContentSerializer, LikeContentSeriali
 
 
 class ContentListAPIView(APIView):
-    @staticmethod
-    def get_ids(request) -> list[int]:
-        from_ = request.GET.get('from')
-        to = request.GET.get('to')
-        if from_ is None or to is None:
-            to = max(redis.get(Content.redis_max_id_key) or 11, 11)
-            from_ = max(to - 10, 1)
-        return range(from_, to)
+    permission_classes = [permissions.AllowAny]
+
+    def get_ids(self, request) -> list[int]:
+        self.from_ = request.GET.get('from')
+        self.to = request.GET.get('to')
+        if self.from_ is None or self.to is None:
+            self.to = max(redis.get(Content.redis_max_id_key) or 11, 11)
+            self.from_ = max(self.to - 10, 1)
+        return range(self.from_, self.to)
     def get(self, request):
         cache = ContentCache(redis)
-        return cache.list(ids=self.get_ids(request))
+        data = {
+            'items': cache.list(ids=self.get_ids(request)),
+            'from': self.from_,
+            'to': self.to,
+        }
+        return Response(
+            data=data,
+            status=status.HTTP_200_OK)
 
 
 class ContentCreateAPIView(APIView):
     serializer_class = ContentSerializer
-    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -36,7 +43,6 @@ class ContentCreateAPIView(APIView):
 
 
 class LikeContentAPIView(APIView):
-    permission_classes = [IsAuthenticated]
     serializer_class = LikeContentSerializer
 
     def post(self, request):

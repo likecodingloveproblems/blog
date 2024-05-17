@@ -30,3 +30,4 @@ class LikeContentSerializer(serializers.ModelSerializer):
                         content_id=self.validated_data['content_id'],
                         value=self.validated_data['value'])
             like.save(**kwargs)
+        return like
