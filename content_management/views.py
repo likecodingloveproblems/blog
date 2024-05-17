@@ -10,8 +10,13 @@ from content_management.serializers import ContentSerializer
 from content_management.serializers import LikeContentSerializer
 
 
-class ContentListAPIView(APIView):
-    permission_classes = [permissions.AllowAny]
+class ContentAPIView(APIView):
+    serializer_class = ContentSerializer
+
+    def get_permissions(self):
+        if self.request.method == "GET":
+            return [permissions.AllowAny()]
+        return super().get_permissions()
 
     def get_ids(self, request) -> list[int]:
         self.from_ = request.GET.get("from")
@@ -29,10 +34,6 @@ class ContentListAPIView(APIView):
             "to": self.to,
         }
         return Response(data=data, status=status.HTTP_200_OK)
-
-
-class ContentCreateAPIView(APIView):
-    serializer_class = ContentSerializer
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
