@@ -19,7 +19,8 @@ class ContentListAPIView(APIView):
         if self.from_ is None or self.to is None:
             self.to = max(redis.get(Content.redis_max_id_key) or 11, 11)
             self.from_ = max(self.to - 10, 1)
-        return range(self.from_, self.to)
+        return range(int(self.from_), int(self.to))
+
     def get(self, request):
         cache = ContentCache(redis)
         data = {

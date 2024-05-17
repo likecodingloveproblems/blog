@@ -50,3 +50,12 @@ class TestContentListAPIView(TestCase):
             'items': self._get_data(),
         }
 
+    def test_pagination(self):
+        self._build_cache()
+        response = self.client.get(reverse('api:content-list')+'?from=2&to=5')
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            'from': '2',
+            'to': '5',
+            'items': self._get_data()[1:4],
+        }
