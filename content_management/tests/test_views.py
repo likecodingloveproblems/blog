@@ -1,5 +1,5 @@
 from django.test import TestCase
-from django.urls import reverse
+from django.urls import reverse_lazy
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -7,6 +7,8 @@ from config.settings.base import redis
 
 
 class TestContentListAPIView(TestCase):
+    url = reverse_lazy("api:content-list")
+
     def setUp(self):
         self.client = APIClient()
         redis.select(15)
@@ -32,7 +34,7 @@ class TestContentListAPIView(TestCase):
             )
 
     def test_empty_cache(self):
-        response = self.client.get(reverse("api:content-list"))
+        response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
             "from": 1,
@@ -42,7 +44,7 @@ class TestContentListAPIView(TestCase):
 
     def test_successful(self):
         self._build_cache()
-        response = self.client.get(reverse("api:content-list"))
+        response = self.client.get(self.url)
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
             "from": 1,
@@ -52,7 +54,7 @@ class TestContentListAPIView(TestCase):
 
     def test_pagination(self):
         self._build_cache()
-        response = self.client.get(reverse("api:content-list") + "?from=2&to=5")
+        response = self.client.get(self.url + "?from=2&to=5")
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
             "from": "2",

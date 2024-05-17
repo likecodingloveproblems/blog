@@ -26,7 +26,7 @@ class TestContentCache(TestCase):
     @staticmethod
     def _create_contents():
         Content.objects.bulk_create(
-            [Content(id=i, title=f"title {i}", text=f"text {i}")] for i in range(1, 4)
+            [Content(id=i, title=f"title {i}", text=f"text {i}") for i in range(1, 4)],
         )
 
     @staticmethod
