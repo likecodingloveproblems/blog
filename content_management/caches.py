@@ -92,13 +92,20 @@ class ContentCache(BaseCache):
         past_count = int(
             self.conn.hget(self.get_key(id_=like.content_id), "likes_count") or 0,
         )
-        past_avg = int(
+        past_avg = float(
             self.conn.hget(self.get_key(id_=like.content_id), "likes_avg") or 0,
         )
         new_avg = (past_avg * past_count + like.value) / (past_count + 1)
 
         self.conn.hincrby(self.get_key(id_=like.content_id), "likes_count")
-        self.conn.hset(self.get_key(id_=like.content_id), "likes_avg", new_avg)
+        self.conn.hset(
+            self.get_key(id_=like.content_id),
+            mapping={
+                "id": like.content_id,
+                "title": like.content.title,
+                "likes_avg": new_avg,
+            },
+        )
 
     def like_value_updated(self, like: Like):
         """Update content like related data
@@ -110,5 +117,8 @@ class ContentCache(BaseCache):
         count = int(
             self.conn.hget(self.get_key(id_=like.content_id), "likes_count") or 0,
         )
-        avg_delta = (new_value - past_value) / count
-        self.conn.hincrby(self.get_key(id_=like.content_id), "likes_avg", avg_delta)
+        past_avg = float(
+            self.conn.hget(self.get_key(id_=like.content_id), "likes_avg") or 0,
+        )
+        new_avg = ((past_avg * count) - past_value + new_value) / count
+        self.conn.hset(self.get_key(id_=like.content_id), "likes_avg", new_avg)

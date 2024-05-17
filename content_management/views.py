@@ -51,4 +51,5 @@ class LikeContentAPIView(APIView):
             context={"user_id": request.user.id},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        _, status_code = serializer.save()
+        return Response(data=serializer.data, status=status_code)

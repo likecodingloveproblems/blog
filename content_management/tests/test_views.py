@@ -5,7 +5,9 @@ from rest_framework.test import APIClient
 
 from blog.users.models import User
 from config.settings.base import redis
+from content_management.caches import ContentCache
 from content_management.models import Content
+from content_management.models import Like
 
 
 class TestContentAPIView(TestCase):
@@ -78,3 +80,56 @@ class TestContentAPIView(TestCase):
         response = self.client.post(self.url, data=self._get_post_body())
         assert response.status_code == status.HTTP_201_CREATED
         assert Content.objects.filter(title="title", text="text").count() == 1
+
+
+class TestLikeContentAPIView(TestCase):
+    url = reverse_lazy("api:like-content")
+
+    def setUp(self):
+        self.user = User.objects.create_user("user 1", password="12345")  # noqa: S106
+        self.content = Content.objects.create(id=1, title="title", text="text")
+        self.client = APIClient()
+        redis.select(15)
+        redis.flushdb()
+        self.cache = ContentCache(redis)
+
+    @staticmethod
+    def _get_post_body():
+        return {"content": 1, "value": 3}
+
+    def _login(self):
+        self.client.login(username="user 1", password="12345")  # noqa: S106
+
+    def test_anonymous_user_not_allowed(self):
+        response = self.client.post(self.url, data=self._get_post_body())
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_first_time_user_like_successful(self):
+        self._login()
+        response = self.client.post(self.url, data=self._get_post_body())
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.json() == {"content": 1, "value": 3}
+        result = list(self.cache.list([self.content.id]))
+        assert result == [
+            {
+                "id": f"{self.content.id}",
+                "title": "title",
+                "likes_count": "1",
+                "likes_avg": "3.0",
+            },
+        ]
+
+    def test_update_like_successful(self):
+        Like.objects.create(content=self.content, user=self.user, value=5)
+        self._login()
+        response = self.client.post(self.url, data=self._get_post_body())
+        assert response.status_code == status.HTTP_200_OK
+        result = list(self.cache.list([self.content.id]))
+        assert result == [
+            {
+                "id": f"{self.content.id}",
+                "title": "title",
+                "likes_count": "1",
+                "likes_avg": "3.0",
+            },
+        ]
