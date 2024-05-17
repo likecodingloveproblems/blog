@@ -17,7 +17,7 @@ class TestContentAPIView(TestCase):
         self.client = APIClient()
         redis.select(15)
         redis.flushdb()
-        User.objects.create_user("user 1", password="12345")  # noqa: S106
+        self.user = User.objects.create_user("user 1", password="12345")  # noqa: S106
 
     @staticmethod
     def _get_data():
@@ -69,6 +69,26 @@ class TestContentAPIView(TestCase):
             "from": "2",
             "to": "5",
             "items": self._get_data()[1:4],
+        }
+
+    def test_user_like_value(self):
+        content = Content.objects.create(id=1, title="title", text="text")
+        Like.objects.create(user=self.user, content=content, value=5)
+        self.client.login(username="user 1", password="12345")  # noqa: S106
+        response = self.client.get(self.url)
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "from": 1,
+            "to": 11,
+            "items": [
+                {
+                    "id": "1",
+                    "title": "title",
+                    "likes_count": "1",
+                    "likes_avg": "5.0",
+                    "your_like_value": 5,
+                },
+            ],
         }
 
     def test_anonymous_user_can_not_create_content(self):

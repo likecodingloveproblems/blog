@@ -55,7 +55,7 @@ class BaseCache:
             pipe.hgetall(key)
         data = pipe.execute()
         # filter empty values
-        return filter(lambda item: item, data)
+        return list(filter(lambda item: item, data))
 
 
 class ContentCache(BaseCache):

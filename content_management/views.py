@@ -3,9 +3,11 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from blog.users.models import User
 from config.settings.base import redis
 from content_management.caches import ContentCache
 from content_management.models import Content
+from content_management.models import Like
 from content_management.serializers import ContentSerializer
 from content_management.serializers import LikeContentSerializer
 
@@ -26,10 +28,25 @@ class ContentAPIView(APIView):
             self.from_ = max(self.to - 10, 1)
         return range(int(self.from_), int(self.to))
 
+    @staticmethod
+    def _add_user_values(user: User, data: list[dict]):
+        # TODO: it can be moved to the cache layer for the performance sake!
+        ids = [content["id"] for content in data]
+        likes = Like.objects.filter(user_id=user.id, content_id__in=ids).values(
+            "content_id",
+            "value",
+        )
+        likes = {like["content_id"]: like["value"] for like in likes}
+        for content in data:
+            content["your_like_value"] = likes.get(int(content["id"]), None)
+
     def get(self, request):
         cache = ContentCache(redis)
+        data = cache.list(ids=self.get_ids(request))
+        if request.user.is_authenticated:
+            self._add_user_values(request.user, data)
         data = {
-            "items": cache.list(ids=self.get_ids(request)),
+            "items": data,
             "from": self.from_,
             "to": self.to,
         }
