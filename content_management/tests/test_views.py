@@ -12,16 +12,16 @@ class TestContentListAPIView(TestCase):
         redis.select(15)
         redis.flushdb()
 
-
     @staticmethod
     def _get_data():
         return [
             {
-                'id': f'{i}',
-                'title': f'title {i}',
-                'likes_count': f'{2 * i}',
-                'likes_avg': f'{i}',
-            } for i in range(1, 6)
+                "id": f"{i}",
+                "title": f"title {i}",
+                "likes_count": f"{2 * i}",
+                "likes_avg": f"{i}",
+            }
+            for i in range(1, 6)
         ]
 
     def _build_cache(self):
@@ -32,30 +32,30 @@ class TestContentListAPIView(TestCase):
             )
 
     def test_empty_cache(self):
-        response = self.client.get(reverse('api:content-list'))
+        response = self.client.get(reverse("api:content-list"))
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
-            'from': 1,
-            'to': 11,
-            'items': [],
+            "from": 1,
+            "to": 11,
+            "items": [],
         }
 
     def test_successful(self):
         self._build_cache()
-        response = self.client.get(reverse('api:content-list'))
+        response = self.client.get(reverse("api:content-list"))
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
-            'from': 1,
-            'to': 11,
-            'items': self._get_data(),
+            "from": 1,
+            "to": 11,
+            "items": self._get_data(),
         }
 
     def test_pagination(self):
         self._build_cache()
-        response = self.client.get(reverse('api:content-list')+'?from=2&to=5')
+        response = self.client.get(reverse("api:content-list") + "?from=2&to=5")
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
-            'from': '2',
-            'to': '5',
-            'items': self._get_data()[1:4],
+            "from": "2",
+            "to": "5",
+            "items": self._get_data()[1:4],
         }

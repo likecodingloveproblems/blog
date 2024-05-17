@@ -315,8 +315,8 @@ SPECTACULAR_SETTINGS = {
 # ------------------------------------------------------------------------------
 
 redis = Redis(
-    host=env.str('REDIS_HOST', 'localhost'),
-    port=env.int('REDIS_PORT', 6379),
-    db=env.int('REDIS_DB', 0),
-    decode_responses=env.bool('REDIS_DECORE_RESPONSE', True),
+    host=env.str("REDIS_HOST", "localhost"),
+    port=env.int("REDIS_PORT", 6379),
+    db=env.int("REDIS_DB", 0),
+    decode_responses=env.bool("REDIS_DECORE_RESPONSE", True),
 )
