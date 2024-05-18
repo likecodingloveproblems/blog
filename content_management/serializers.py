@@ -21,6 +21,7 @@ class LikeContentSerializer(serializers.ModelSerializer):
         if like := Like.objects.filter(
             user_id=user_id,
             content=self.validated_data["content"],
+            state=Like.StateChoice.OK,
         ).first():
             # update value
             like.value = self.validated_data["value"]

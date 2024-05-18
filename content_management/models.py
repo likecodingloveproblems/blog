@@ -10,6 +10,7 @@ from django_lifecycle.conditions import WhenFieldHasChanged
 
 from blog.users.models import User
 from config.settings.base import redis
+from content_management.rate_limiter import TokenBucketRateLimiter
 
 
 class Content(models.Model):
@@ -27,6 +28,10 @@ class Content(models.Model):
 
 
 class Like(LifecycleModel):
+    class StateChoice(models.IntegerChoices):
+        OK = 1
+        RATE_LIMITED = 2
+
     content = models.ForeignKey(Content, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     value = models.PositiveSmallIntegerField(
@@ -35,6 +40,11 @@ class Like(LifecycleModel):
             MinValueValidator(limit_value=0),
             MaxValueValidator(limit_value=5),
         ),
+    )
+    state = models.IntegerField(
+        verbose_name=_("state"),
+        choices=StateChoice.choices,
+        default=StateChoice.OK,
     )
 
     def __str__(self):
@@ -48,8 +58,19 @@ class Like(LifecycleModel):
 
         return ContentCache(redis)
 
+    @staticmethod
+    def get_rate_limiter():
+        return TokenBucketRateLimiter(conn=redis)
+
+    def _get_rate_limiter_key(self) -> str:
+        return f"like:rate-limiter:content_id:{self.content_id}"
+
     @hook(AFTER_CREATE)
     def update_cache(self):
+        rate_limiter = self.get_rate_limiter()
+        if rate_limiter.is_limited(self._get_rate_limiter_key()):
+            self.state = Like.StateChoice.RATE_LIMITED
+            return
         cache = self.get_cache()
         cache.content_liked(self)
 

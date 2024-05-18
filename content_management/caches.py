@@ -74,7 +74,10 @@ class ContentCache(BaseCache):
 
     def _get_data(self):
         """Get content data from database"""
-        likes = Like.objects.filter(content_id=OuterRef("id")).values("content_id")
+        likes = Like.objects.filter(
+            content_id=OuterRef("id"),
+            state=Like.StateChoice.OK,
+        ).values("content_id")
         likes_count = likes.annotate(count=Count("user_id", distinct=True)).values(
             "count",
         )
