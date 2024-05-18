@@ -4,6 +4,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django_lifecycle import AFTER_CREATE
 from django_lifecycle import AFTER_UPDATE
+from django_lifecycle import BEFORE_CREATE
 from django_lifecycle import LifecycleModel
 from django_lifecycle import hook
 from django_lifecycle.conditions import WhenFieldHasChanged
@@ -65,7 +66,7 @@ class Like(LifecycleModel):
     def _get_rate_limiter_key(self) -> str:
         return f"like:rate-limiter:content_id:{self.content_id}"
 
-    @hook(AFTER_CREATE)
+    @hook(BEFORE_CREATE)
     def update_cache(self):
         rate_limiter = self.get_rate_limiter()
         if rate_limiter.is_limited(self._get_rate_limiter_key()):

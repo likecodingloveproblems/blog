@@ -1,3 +1,5 @@
+from unittest import mock
+
 from django.test import TestCase
 from django.urls import reverse_lazy
 from rest_framework import status
@@ -8,6 +10,7 @@ from config.settings.base import redis
 from content_management.caches import ContentCache
 from content_management.models import Content
 from content_management.models import Like
+from content_management.rate_limiter import TokenBucketRateLimiter
 
 
 class TestContentAPIView(TestCase):
@@ -111,6 +114,7 @@ class TestLikeContentAPIView(TestCase):
         self.client = APIClient()
         redis.select(15)
         redis.flushdb()
+        self.conn = redis
         self.cache = ContentCache(redis)
 
     @staticmethod
@@ -153,3 +157,29 @@ class TestLikeContentAPIView(TestCase):
                 "likes_avg": "3.0",
             },
         ]
+
+    @mock.patch.object(Like, "get_rate_limiter")
+    def test_rate_limited_likes(self, mocked_get_rate_limiter):
+        mocked_get_rate_limiter.return_value = TokenBucketRateLimiter(
+            self.conn,
+            limit_count=3,
+        )
+        for i in range(1, 6):
+            username = f"username {i}"
+            password = f"password {i}"
+            User.objects.create_user(username=username, password=password)
+            self.client.login(username=username, password=password)
+            response = self.client.post(self.url, data={"content": 1, "value": i})
+            assert status.is_success(response.status_code)
+
+        result = list(self.cache.list([1]))
+        assert result == [
+            {
+                "id": "1",
+                "title": "title",
+                "likes_count": "3",
+                "likes_avg": "2.0",
+            },
+        ]
+        assert Like.objects.filter(state=Like.StateChoice.OK).count() == 3  # noqa: PLR2004
+        assert Like.objects.filter(state=Like.StateChoice.RATE_LIMITED).count() == 2  # noqa: PLR2004
