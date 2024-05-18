@@ -1,6 +1,10 @@
 # Blog
 
-This is a blog project.
+Simple blog project designed by scalability in mind.
+Current design is not scalable in write, but in read,
+I mean if the load of creating content or liking content become huge, the database can overload.
+but read operations mainly are dependent on Redis.
+
 
 [![Built with Cookiecutter Django](https://img.shields.io/badge/built%20with-Cookiecutter%20Django-ff69b4.svg?logo=cookiecutter)](https://github.com/cookiecutter/cookiecutter-django/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
